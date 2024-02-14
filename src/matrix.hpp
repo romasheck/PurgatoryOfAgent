@@ -15,7 +15,7 @@ public:
     using std::vector<std::vector<T>>::size;
 
 public:
-    Matrix<T> (size_t numOfLines, size_t numOfColumns);
+    Matrix (size_t numOfLines, size_t numOfColumns);
 
 public:
     size_t getNumOfLines () const;
@@ -33,7 +33,10 @@ public:
     using Matrix<double>::getNumOfLines;
 
 public:
-    void fill(const double& value);
+    dMatrix(Matrix<double> matrix);
+
+public:
+    void fill(const double value);
 
     dMatrix operator*(const double scalar) const;
 

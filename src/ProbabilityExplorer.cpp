@@ -1,4 +1,4 @@
-#include "PrabilityExplorer.hpp"
+#include "ProbilityExplorer.hpp"
 
 namespace ProbabilityTask
 {
@@ -10,8 +10,8 @@ ProbabilityExplorer::ProbabilityExplorer (uint32_t sizeN, uint32_t sizeM, dMatri
     p(probP),
     q(probQ),
     probOfSpawn(1 / (N * M)),
-    matrixG(N, M),
-    matrixW(N, M)
+    matrixG(N + 2, M + 2),
+    matrixW(N + 2, M + 2)
 {
     if (!(p >= 0 && p <= 1))
     {
@@ -30,19 +30,130 @@ ProbabilityExplorer::ProbabilityExplorer (uint32_t sizeN, uint32_t sizeM, dMatri
         exit(-1);
     }
 
+    R = getExpandedMatrix (R);
+    configureMatrixG();
+    configureMatrixW();  
+}
+
+void
+ProbabilityExplorer::configureMatrixG ()
+{
     matrixG.fill(0);
 
-    for (int i = 0; i < N; i++)
+    dMatrix matrixFilledOne(N, M);
+
+    matrixFilledOne.fill(1);
+    matrixFilledOne = getExpandedMatrix (matrixFilledOne);
+
+    for (int i = 1; i < N + 1; i++)
     {
-        for (int j = 0; j < M; j ++)
+        for (int j = 1; j < M + 1; j++)
         {
-            if ( i != 0 && i != N-1 && j != 0 && j != M -1)
+            matrixG[i][j] += matrixFilledOne[i-1][j];
+            matrixG[i][j] += matrixFilledOne[i+1][j];
+
+            matrixG[i][j] += matrixFilledOne[i][j-1];
+            matrixG[i][j] += matrixFilledOne[i][j+1];
+
+            matrixG[i][j] = 1 / matrixG[i][j];
+        }
+    }
+}
+
+void
+ProbabilityExplorer::configureMatrixW ()
+{
+    for (int i = 1; i < N + 1; i++)
+    {
+        for (int j = 1; j < M + 1; j++)
+        {
+            auto topDog = calcTopDog(R[i][j-1], R[i-1][j], R[i][j+1], R[i+1][j]);
+
+            switch (topDog)
             {
-                
+            case Directions::left:
+            {
+                matrixW[i][j-1] = static_cast<unsigned char>(Directions::right);
+                break;
+            }
+            case Directions::bottom:
+            {
+                matrixW[i-1][j] = static_cast<unsigned char>(Directions::top);
+                break;
+            }
+            case Directions::right:
+            {
+                matrixW[i][j+1] = static_cast<unsigned char>(Directions::left);
+                break;
+            }
+            case Directions::top:
+            {
+                matrixW[i+1][j] = static_cast<unsigned char>(Directions::bottom);
+                break;
+            }
+            default:
+                std::cerr << "wrong direction" << std::endl;
+                break;
             }
         }
-    }    
+    } 
 }
+
+Directions
+ProbabilityExplorer::calcTopDog (double left, double bottom, double right, double top)
+{
+    if (left >= bottom && left >= right && left >= top) {
+        return Directions::left;
+    } else if (bottom >= left && bottom >= right && bottom >= top) {
+        return Directions::bottom;
+    } else if (right >= left && right >= bottom && right >= top) {
+        return Directions::right;
+    } else {
+        return Directions::top;
+    }
+}
+
+
+template <typename T>
+Matrix<T>
+ProbabilityExplorer::getExpandedMatrix (const Matrix<T> & matrix)
+{
+    size_t N = matrix.getNumOfLines();
+    size_t M = matrix.getNumOfColumns();
+
+    Matrix<T> expanded( N+2, std::vector<T>(M + 2, 0));
+
+    for (int i = 0; i < N; ++i)
+    {
+        T* dest = &expanded[i + 1][1];
+        const T* src = &matrix[i][0];
+        
+        std::copy(src, src + M, dest);
+    }
+
+    return expanded;
+}
+
+template<typename T>
+Matrix<T>
+ProbabilityExplorer::getInternalMatrix(const Matrix<T> & expanded)
+{
+    size_t N = expanded.getNumOfLines();
+    size_t M = expanded.getNumOfColumns();
+    
+    std::vector<std::vector<T>> center(N - 2, std::vector<int>(M - 2, 0));
+    
+    for (int i = 1; i < n - 1; ++i) 
+    {
+        const T* src = &expanded[i][1];
+        T* dest = &center[i - 1][0];
+        
+        std::copy(src, src + m - 2, dest);
+    }
+    
+    return center;
+}
+
 
 dMatrix
 ProbabilityExplorer::getProbabilityMatrixAfterStep (uint32_t numOfSteps) const
@@ -52,7 +163,10 @@ ProbabilityExplorer::getProbabilityMatrixAfterStep (uint32_t numOfSteps) const
     matrixP.fill(probOfSpawn);
     matrixFilledOne.fill(1);
 
-    dMatrix matrixT(N, M);
+    matrixP = getExpandedMatrix (matrixP);
+    matrixFilledOne = getExpandedMatrix (matrixFilledOne);
+
+    dMatrix matrixT(N + 2, M + 2);
     matrixT.fill(0);
 
     for (int step = 1; step <= numOfSteps; step++)
@@ -62,145 +176,32 @@ ProbabilityExplorer::getProbabilityMatrixAfterStep (uint32_t numOfSteps) const
         matrixP = matrixFilledOne * (p*probOfSpawn) + matrixP * (1-p); 
     }
 
-    return matrixP;
+    return getInternalMatrix(matrixP);
 }
 
 void
 ProbabilityExplorer::updateMatrixT (dMatrix& lrefMatrixT, const dMatrix& matrixP) const
 {
-    updateMatrixTInternal (lrefMatrixT, matrixP);
-    
-    ////// necessary cringe and copypaste
-
-    updateMatrixTBoundLeft (lrefMatrixT, matrixP);
-    updateMatrixTBoundBottom (lrefMatrixT, matrixP);
-    updateMatrixTBoundRight (lrefMatrixT, matrixP);
-    updateMatrixTBoundTop (lrefMatrixT, matrixP);
-
-    updateMatrixTCornerLB (lrefMatrixT, matrixP);
-    updateMatrixTCornerRB (lrefMatrixT, matrixP);
-    updateMatrixTCornerRT (lrefMatrixT, matrixP);
-    updateMatrixTCornerLT (lrefMatrixT, matrixP);
-    //////
-}
-
-void
-ProbabilityExplorer::updateMatrixTInternal (dMatrix& lrefMatrixT, const dMatrix& matrixP) const
-{
-    for (int i = 1; i < N-1; i++)
+    for (int i = 1; i < N +1; i++)
     {
-        for (int j = 1; j < M-1; j++)
+        for (int j = 1; j < M +1; j++)
         {
-            lrefMatrixT[i][j] += matrixP[i][j-1] * calcStepProb (i, j, i, j-1, Directions::left);//left
-            lrefMatrixT[i][j] += matrixP[i-1][j] * calcStepProb (i, j, i-1, j, Directions::bottom);//bottom
-            lrefMatrixT[i][j] += matrixP[i][j+1] * calcStepProb (i, j, i, j+1, Directions::right);//right
-            lrefMatrixT[i][j] += matrixP[i+1][j] * calcStepProb (i, j, i+1, j, Directions::top);//top
+            lrefMatrixT[i][j] += matrixP[i][j-1] * calcStepProb(i, j, i, j - 1, Directions::left);
+            lrefMatrixT[i][j] += matrixP[i-1][j] * calcStepProb(i, j, i - 1, j, Directions::bottom);
+            lrefMatrixT[i][j] += matrixP[i][j+1] * calcStepProb(i, j, i, j + 1, Directions::right);
+            lrefMatrixT[i][j] += matrixP[i+1][j] * calcStepProb(i, j, i + 1, j, Directions::top);
         }
     }
 }
 
-////// necessary cringe and copypaste
-
-void
-ProbabilityExplorer::updateMatrixTBoundLeft (dMatrix& lrefMatrixT, const dMatrix& matrixP) const
-{
-    const auto j = 0;
-
-    for (int i = 1; i < N-1; i++)
-    {
-        lrefMatrixT[i][0] += matrixP[i-1][0] * calcStepProb (i, j, i-1, j, Directions::bottom);
-        lrefMatrixT[i][0] += matrixP[i][1] * calcStepProb (i, j, i, j+1, Directions::right);
-        lrefMatrixT[i][0] += matrixP[i+1][0] * calcStepProb (i, j, i+1, j, Directions::top);
-    }
-}
-
-void
-ProbabilityExplorer::updateMatrixTBoundBottom (dMatrix& lrefMatrixT, const dMatrix& matrixP) const
-{
-    const auto i = 0;
-
-    for (int j = 1; j < N-1; j++)
-    {
-        lrefMatrixT[i][j] += matrixP[i][j-1] * calcStepProb (i, j, i, j-1, Directions::left);//left
-        lrefMatrixT[i][j] += matrixP[i][j+1] * calcStepProb (i, j, i, j+1, Directions::right);//right
-        lrefMatrixT[i][j] += matrixP[i+1][j] * calcStepProb (i, j, i+1, j, Directions::top);//top
-    }
-}
-
-void
-ProbabilityExplorer::updateMatrixTBoundRight (dMatrix& lrefMatrixT, const dMatrix& matrixP) const
-{
-    const auto j = M-1;
-
-    for (int i = 1; i < N-1; i++)
-    {
-        lrefMatrixT[i][j] += matrixP[i][j-1] * calcStepProb (i, j, i, j-1, Directions::left);//left
-        lrefMatrixT[i][j] += matrixP[i-1][j] * calcStepProb (i, j, i-1, j, Directions::bottom);//bottom
-        lrefMatrixT[i][j] += matrixP[i+1][j] * calcStepProb (i, j, i+1, j, Directions::top);//top
-    }
-}
-
-void
-ProbabilityExplorer::updateMatrixTBoundTop (dMatrix& lrefMatrixT, const dMatrix& matrixP) const
-{
-    const auto i = N -1;
-
-    for (int j = 1; j < M-1; j++)
-    {
-        lrefMatrixT[i][j] += matrixP[i][j-1] * calcStepProb (i, j, i, j-1, Directions::left);//left
-        lrefMatrixT[i][j] += matrixP[i-1][j] * calcStepProb (i, j, i-1, j, Directions::bottom);//bottom
-        lrefMatrixT[i][j] += matrixP[i][j+1] * calcStepProb (i, j, i, j+1, Directions::right);//right
-    }
-}
-
-void
-ProbabilityExplorer::updateMatrixTCornerLB (dMatrix& lrefMatrixT, const dMatrix& matrixP) const
-{
-    const auto i = 0;
-    const auto j = 0;
-
-    lrefMatrixT[i][j] += matrixP[i][j+1] * calcStepProb (i, j, i, j+1, Directions::right);//right
-    lrefMatrixT[i][j] += matrixP[i+1][j] * calcStepProb (i, j, i+1, j, Directions::top);//top
-}
-
-void
-ProbabilityExplorer::updateMatrixTCornerRB (dMatrix& lrefMatrixT, const dMatrix& matrixP) const
-{
-    const auto i = 0;
-    const auto j = M-1;
-
-    lrefMatrixT[i][j] += matrixP[i][j-1] * calcStepProb (i, j, i, j-1, Directions::left);//left
-    lrefMatrixT[i][j] += matrixP[i+1][j] * calcStepProb (i, j, i+1, j, Directions::top);//top
-}
-
-void
-ProbabilityExplorer::updateMatrixTCornerRT (dMatrix& lrefMatrixT, const dMatrix& matrixP) const
-{
-    const auto i = N - 1;
-    const auto j = M - 1;
-    
-    lrefMatrixT[i][j] += matrixP[i][j-1] * calcStepProb (i, j, i, j-1, Directions::left);//left
-    lrefMatrixT[i][j] += matrixP[i-1][j] * calcStepProb (i, j, i-1, j, Directions::bottom);//bottom
-}
-
-void
-ProbabilityExplorer::updateMatrixTCornerLT (dMatrix& lrefMatrixT, const dMatrix& matrixP) const
-{
-    const auto i = N - 1;
-    const auto j = 0;
-
-    lrefMatrixT[i][j] += matrixP[i-1][j] * calcStepProb (i, j, i-1, j, Directions::bottom);//bottom
-    lrefMatrixT[i][j] += matrixP[i][j+1] * calcStepProb (i, j, i, j+1, Directions::right);//right
-}
-
-///////
-
 double
 ProbabilityExplorer::calcStepProb (int lineOfCur, int colOfCur, int lineOfPrev, int colOfPrev, Directions neighbor) const
 {
-    auto result = matrixG[lineOfCur][lineOfPrev] * q;
+    auto result = matrixG[lineOfPrev][lineOfPrev] * q;
 
     result += (double) (( matrixW[lineOfCur][colOfCur] & static_cast<unsigned char>(neighbor)) != 0) * (1-q);
+
+    return result;
 }
 
 }

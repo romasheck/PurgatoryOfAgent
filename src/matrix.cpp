@@ -3,6 +3,29 @@
 namespace ProbabilityTask
 {
 
+template <typename T>
+Matrix<T>::Matrix (size_t numOfLines, size_t numOfColumns):
+    std::vector<std::vector<T>>(numOfLines, std::vector<T>(numOfColumns))
+    {};
+
+template <typename T>
+size_t
+Matrix<T>::getNumOfLines() const
+{
+    size();
+}
+
+template <typename T>
+size_t
+Matrix<T>::getNumOfLines() const
+{
+    at(0).size();
+}
+
+dMatrix::dMatrix(Matrix<double> matrix):
+    Matrix<double>(matrix)
+    {};
+
 dMatrix
 dMatrix:: operator * (const double scalar) const
 {
@@ -20,7 +43,7 @@ dMatrix:: operator * (const double scalar) const
 }
 
 void 
-dMatrix::fill(const double& value)
+dMatrix::fill(const double value)
 {
     for (auto& row : *this)
     {
