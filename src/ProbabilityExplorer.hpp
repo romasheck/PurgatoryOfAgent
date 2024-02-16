@@ -13,17 +13,29 @@ enum class Directions : unsigned char
     top = 1 << 3     // 1000
 };
 
+/// @brief Small and casual class for one task
 class ProbabilityExplorer final
 {
 public:
+    /// @brief The constructor of class
+    /// @param sizeN - number of Lines
+    /// @param sizeM - number of Columns
+    /// @param matrixR - matrix R (marks)
+    /// @param probP - the probability of agent death
+    /// @param probQ - the probability of equiprobable in directions step
     ProbabilityExplorer(uint32_t sizeN, uint32_t sizeM, dMatrix matrixR, double probP, double probQ);
     
     ProbabilityExplorer(ProbabilityExplorer&) = delete;
     ~ProbabilityExplorer() = default;
 
 public:
+    /// @brief Calculation the matrix of probabities
+    /// @param numOfSteps - number of agent steps
+    /// @return the matrix of probabilities to of an agent being in the coresponding cell after steps
     dMatrix getProbabilityMatrixAfterStep (uint32_t numOfSteps) const;
 
+    /// @brief Slow function, that calculate matrix of probabilities and display it step by step (using SFML in realization)
+    /// @param numOfSteps - number of agent steps
     void visualProbabiltyMatrixSteping (uint32_t numOfSteps) const;
 
 private:
@@ -33,42 +45,10 @@ private:
     static Directions calcTopDog (double left, double bottom, double right, double top);
     
     template<typename T>
-    static Matrix<T> getExpandedMatrix (const Matrix<T> & matrix);/*
-    {
-        size_t N = matrix.getNumOfLines();
-        size_t M = matrix.getNumOfColumns();
-
-        Matrix<T> expanded( N+2, std::vector<T>(M + 2, 0));
-
-        for (int i = 0; i < N; ++i)
-        {
-            T* dest = &expanded[i + 1][1];
-            const T* src = &matrix[i][0];
-            
-            std::copy(src, src + M, dest);
-        }
-
-        return expanded;
-    }*/
+    static Matrix<T> getExpandedMatrix (const Matrix<T> & matrix);
 
     template<typename T>
-    static Matrix<T> getInternalMatrix(const Matrix<T> & expanded);/*
-    {
-        size_t N = expanded.getNumOfLines();
-        size_t M = expanded.getNumOfColumns();
-        
-        Matrix<T> center(N - 2, std::vector<int>(M - 2, 0));
-        
-        for (int i = 1; i < n - 1; ++i) 
-        {
-            const T* src = &expanded[i][1];
-            T* dest = &center[i - 1][0];
-            
-            std::copy(src, src + m - 2, dest);
-        }
-        
-        return center;
-    }*/
+    static Matrix<T> getInternalMatrix(const Matrix<T> & expanded);
 
 private:
     void updateMatrixT (dMatrix& lrefMatrixT, const dMatrix& matrixP) const;

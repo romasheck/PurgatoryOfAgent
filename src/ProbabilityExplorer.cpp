@@ -33,6 +33,7 @@ ProbabilityExplorer::ProbabilityExplorer (uint32_t sizeN, uint32_t sizeM, dMatri
     }
 
     R = getExpandedMatrix<double> (R);
+    
     configureMatrixG();
     configureMatrixW();
 }
@@ -175,9 +176,6 @@ std::cout << " G[2][1] = " << matrixG[2][1] << std::endl;
 
     for (int step = 1; step <= numOfSteps; step++)
     {
-std::cout<< std::endl << "before step " << step << std::endl;
-getInternalMatrix(matrixP).print();
-std::cout<< std::endl;
         updateMatrixT (matrixT, matrixP);
 
         matrixP = matrixFilledOne * (p*probOfSpawn) + matrixT * (1-p); 
@@ -199,11 +197,6 @@ ProbabilityExplorer::updateMatrixT (dMatrix& lrefMatrixT, const dMatrix& matrixP
             lrefMatrixT[i][j] += matrixP[i-1][j] * calcStepProb(i, j, i - 1, j, Directions::bottom);
             lrefMatrixT[i][j] += matrixP[i][j+1] * calcStepProb(i, j, i, j + 1, Directions::right);
             lrefMatrixT[i][j] += matrixP[i+1][j] * calcStepProb(i, j, i + 1, j, Directions::top);
-
-//std::cout << std::endl << "prob go to (" << i << "," << j << ") from left is " << calcStepProb(i, j, i, j - 1, Directions::left) << std::endl;
-//std::cout << "prob go to (" << i << "," << j << ") from bottom is " <<  calcStepProb(i, j, i - 1, j, Directions::bottom) << std::endl;
-//std::cout << "prob go to (" << i << "," << j << ") from right is " <<  calcStepProb(i, j, i, j + 1, Directions::right) << std::endl;        
-//std::cout << "prob go to (" << i << "," << j << ") from top is " <<  calcStepProb(i, j, i + 1, j, Directions::top) << std::endl << std::endl;
         }
     }
 }
@@ -212,8 +205,7 @@ double
 ProbabilityExplorer::calcStepProb (int lineOfCur, int colOfCur, int lineOfPrev, int colOfPrev, Directions neighbor) const
 {
     auto result = matrixG[lineOfPrev][colOfPrev] * q;
-//std::cout << std::endl << "to " << lineOfCur << ',' << colOfCur << " from " << lineOfPrev << "," << colOfPrev << std::endl;
-//std::cout << "G of FROM  = " <<   
+ 
     result += ((double) (( matrixW[lineOfCur][colOfCur] & static_cast<unsigned char>(neighbor)) != 0)) * (1-q);
 
     return result;

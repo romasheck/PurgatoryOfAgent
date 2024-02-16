@@ -6,7 +6,8 @@
 
 /*
 
-// Dirtty main, can 
+Dirtty main. I can write a parser and etc.
+It should be done, but not today))
 
 */
 
@@ -14,6 +15,7 @@ using namespace ProbabilityTask;
 
 int main( int argc, char* argv[]) 
 {
+//// Initialization begin
     if (argc < 5) {
         std::cerr << "Usage: " << argv[0] << " <N> <M> <num of steps> <p> <q>" << std::endl;
         return 1;
@@ -47,12 +49,16 @@ int main( int argc, char* argv[])
     }
 
     file.close();
+//// Initialization end
 
+    // Create main class 
     ProbabilityExplorer solver(N, M, matrixR, p ,q);
 
+    // Use it to calculate the matrix of probabilities
     auto matrix = solver.getProbabilityMatrixAfterStep(stepsNum);
     
-    std::cout << std::endl << "FINAL: sum of all probs = "<< matrix.getSumOfAll() << std::endl;
-
+    // Print the matrix of probabilties stdout
+    matrix.print();
+    
     return 0;
 }
