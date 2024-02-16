@@ -59,6 +59,7 @@ int main( int argc, char* argv[])
     
     // Print the matrix of probabilties stdout
     matrix.print();
-    
+
+
     return 0;
 }

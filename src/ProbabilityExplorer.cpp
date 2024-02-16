@@ -161,7 +161,6 @@ ProbabilityExplorer::getInternalMatrix(const Matrix<T> & expanded)
 dMatrix
 ProbabilityExplorer::getProbabilityMatrixAfterStep (uint32_t numOfSteps) const
 {
-std::cout << " G[2][1] = " << matrixG[2][1] << std::endl;
     dMatrix matrixP(N, M), matrixFilledOne(N, M);
 
     matrixP.fill(probOfSpawn);
