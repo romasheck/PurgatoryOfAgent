@@ -15,11 +15,16 @@ public:
     using std::vector<std::vector<T>>::size;
 
 public:
-    Matrix (size_t numOfLines, size_t numOfColumns);
+    Matrix (size_t numOfLines, size_t numOfColumns):
+    std::vector<std::vector<T>>(numOfLines, std::vector<T>(numOfColumns))
+    {};
 
 public:
     size_t getNumOfLines () const;
     size_t getNumOfColumns () const;
+
+    void print() const;
+
 };
 
 class dMatrix : public Matrix<double> {
@@ -42,10 +47,8 @@ public:
 
     dMatrix operator+(const dMatrix& other) const;
 
-    void print() const;
-
 public:
-    //static dMatrix E(size_t N, size_t M);
+    double getSumOfAll () const;
 };
 
 

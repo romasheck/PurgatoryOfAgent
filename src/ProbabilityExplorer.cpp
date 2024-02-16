@@ -1,15 +1,17 @@
-#include "ProbilityExplorer.hpp"
+#include "ProbabilityExplorer.hpp"
 
 namespace ProbabilityTask
 {
 
+template class Matrix<double>;
+
 ProbabilityExplorer::ProbabilityExplorer (uint32_t sizeN, uint32_t sizeM, dMatrix matrixR, double probP, double probQ):
-    M(sizeM),
     N(sizeN),
+    M(sizeM),
     R(matrixR),
     p(probP),
     q(probQ),
-    probOfSpawn(1 / (N * M)),
+    probOfSpawn(1 / (double)(N * M)),
     matrixG(N + 2, M + 2),
     matrixW(N + 2, M + 2)
 {
@@ -30,9 +32,9 @@ ProbabilityExplorer::ProbabilityExplorer (uint32_t sizeN, uint32_t sizeM, dMatri
         exit(-1);
     }
 
-    R = getExpandedMatrix (R);
+    R = getExpandedMatrix<double> (R);
     configureMatrixG();
-    configureMatrixW();  
+    configureMatrixW();
 }
 
 void
@@ -73,22 +75,22 @@ ProbabilityExplorer::configureMatrixW ()
             {
             case Directions::left:
             {
-                matrixW[i][j-1] = static_cast<unsigned char>(Directions::right);
+                matrixW[i][j-1] = matrixW[i][j-1] | static_cast<unsigned char>(Directions::right);
                 break;
             }
             case Directions::bottom:
             {
-                matrixW[i-1][j] = static_cast<unsigned char>(Directions::top);
+                matrixW[i-1][j] = matrixW[i-1][j] | static_cast<unsigned char>(Directions::top);
                 break;
             }
             case Directions::right:
             {
-                matrixW[i][j+1] = static_cast<unsigned char>(Directions::left);
+                matrixW[i][j+1] = matrixW[i][j+1] | static_cast<unsigned char>(Directions::left);
                 break;
             }
             case Directions::top:
             {
-                matrixW[i+1][j] = static_cast<unsigned char>(Directions::bottom);
+                matrixW[i+1][j] = matrixW[i+1][j] | static_cast<unsigned char>(Directions::bottom);
                 break;
             }
             default:
@@ -96,7 +98,7 @@ ProbabilityExplorer::configureMatrixW ()
                 break;
             }
         }
-    } 
+    }
 }
 
 Directions
@@ -141,14 +143,14 @@ ProbabilityExplorer::getInternalMatrix(const Matrix<T> & expanded)
     size_t N = expanded.getNumOfLines();
     size_t M = expanded.getNumOfColumns();
     
-    std::vector<std::vector<T>> center(N - 2, std::vector<int>(M - 2, 0));
+    Matrix<T> center(N - 2, std::vector<T>(M - 2, 0));
     
-    for (int i = 1; i < n - 1; ++i) 
+    for (int i = 1; i < N - 1; ++i) 
     {
         const T* src = &expanded[i][1];
         T* dest = &center[i - 1][0];
         
-        std::copy(src, src + m - 2, dest);
+        std::copy(src, src + M - 2, dest);
     }
     
     return center;
@@ -158,25 +160,30 @@ ProbabilityExplorer::getInternalMatrix(const Matrix<T> & expanded)
 dMatrix
 ProbabilityExplorer::getProbabilityMatrixAfterStep (uint32_t numOfSteps) const
 {
+std::cout << " G[2][1] = " << matrixG[2][1] << std::endl;
     dMatrix matrixP(N, M), matrixFilledOne(N, M);
 
     matrixP.fill(probOfSpawn);
     matrixFilledOne.fill(1);
 
-    matrixP = getExpandedMatrix (matrixP);
-    matrixFilledOne = getExpandedMatrix (matrixFilledOne);
+    matrixP = getExpandedMatrix<double> (matrixP);
+    matrixFilledOne = getExpandedMatrix<double> (matrixFilledOne);
+
 
     dMatrix matrixT(N + 2, M + 2);
     matrixT.fill(0);
 
     for (int step = 1; step <= numOfSteps; step++)
     {
+std::cout<< std::endl << "before step " << step << std::endl;
+getInternalMatrix(matrixP).print();
+std::cout<< std::endl;
         updateMatrixT (matrixT, matrixP);
 
-        matrixP = matrixFilledOne * (p*probOfSpawn) + matrixP * (1-p); 
+        matrixP = matrixFilledOne * (p*probOfSpawn) + matrixT * (1-p); 
     }
 
-    return getInternalMatrix(matrixP);
+    return getInternalMatrix<double>(matrixP);
 }
 
 void
@@ -186,10 +193,17 @@ ProbabilityExplorer::updateMatrixT (dMatrix& lrefMatrixT, const dMatrix& matrixP
     {
         for (int j = 1; j < M +1; j++)
         {
+            lrefMatrixT[i][j] = 0;
+
             lrefMatrixT[i][j] += matrixP[i][j-1] * calcStepProb(i, j, i, j - 1, Directions::left);
             lrefMatrixT[i][j] += matrixP[i-1][j] * calcStepProb(i, j, i - 1, j, Directions::bottom);
             lrefMatrixT[i][j] += matrixP[i][j+1] * calcStepProb(i, j, i, j + 1, Directions::right);
             lrefMatrixT[i][j] += matrixP[i+1][j] * calcStepProb(i, j, i + 1, j, Directions::top);
+
+//std::cout << std::endl << "prob go to (" << i << "," << j << ") from left is " << calcStepProb(i, j, i, j - 1, Directions::left) << std::endl;
+//std::cout << "prob go to (" << i << "," << j << ") from bottom is " <<  calcStepProb(i, j, i - 1, j, Directions::bottom) << std::endl;
+//std::cout << "prob go to (" << i << "," << j << ") from right is " <<  calcStepProb(i, j, i, j + 1, Directions::right) << std::endl;        
+//std::cout << "prob go to (" << i << "," << j << ") from top is " <<  calcStepProb(i, j, i + 1, j, Directions::top) << std::endl << std::endl;
         }
     }
 }
@@ -197,9 +211,10 @@ ProbabilityExplorer::updateMatrixT (dMatrix& lrefMatrixT, const dMatrix& matrixP
 double
 ProbabilityExplorer::calcStepProb (int lineOfCur, int colOfCur, int lineOfPrev, int colOfPrev, Directions neighbor) const
 {
-    auto result = matrixG[lineOfPrev][lineOfPrev] * q;
-
-    result += (double) (( matrixW[lineOfCur][colOfCur] & static_cast<unsigned char>(neighbor)) != 0) * (1-q);
+    auto result = matrixG[lineOfPrev][colOfPrev] * q;
+//std::cout << std::endl << "to " << lineOfCur << ',' << colOfCur << " from " << lineOfPrev << "," << colOfPrev << std::endl;
+//std::cout << "G of FROM  = " <<   
+    result += ((double) (( matrixW[lineOfCur][colOfCur] & static_cast<unsigned char>(neighbor)) != 0)) * (1-q);
 
     return result;
 }

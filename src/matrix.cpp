@@ -1,25 +1,55 @@
 #include "matrix.hpp"
 
+#include <bitset>
+
 namespace ProbabilityTask
 {
 
-template <typename T>
-Matrix<T>::Matrix (size_t numOfLines, size_t numOfColumns):
-    std::vector<std::vector<T>>(numOfLines, std::vector<T>(numOfColumns))
-    {};
+template class Matrix<double>;
+template class Matrix<unsigned char>;
 
 template <typename T>
 size_t
 Matrix<T>::getNumOfLines() const
 {
-    size();
+    return size();
 }
 
 template <typename T>
 size_t
-Matrix<T>::getNumOfLines() const
+Matrix<T>::getNumOfColumns() const
 {
-    at(0).size();
+    return ((std::vector<std::vector<T>>*)(this))->at(0).size();
+}
+
+template <typename T>
+void
+Matrix<T>::print () const
+{
+    for (const auto& row : *this)
+    {
+        for (const auto& elem : row)
+        {
+            std::cout << elem << " ";
+        }
+        
+        std::cout << std::endl;
+    }
+}
+
+template<>
+void
+Matrix<unsigned char>::print () const
+{
+    for (const auto& row : *this)
+    {
+        for (const auto& elem : row)
+        {
+            std::cout << std::bitset<4>(elem) << " ";
+        }
+        
+        std::cout << std::endl;
+    }
 }
 
 dMatrix::dMatrix(Matrix<double> matrix):
@@ -77,20 +107,20 @@ dMatrix:: operator + (const dMatrix& other) const
     return result;
 }
 
-void
-dMatrix::print() const 
+double
+dMatrix::getSumOfAll () const
 {
-    for (const auto& row : *this)
+    double result = 0;
+
+    for (auto row : *this)
     {
-        for (const auto& elem : row)
+        for (auto elem : row)
         {
-            std::cout << elem << " ";
+            result += elem;
         }
-        
-        std::cout << std::endl;
     }
+
+    return result;
 }
-
-
 
 }
